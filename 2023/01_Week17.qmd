@@ -1,0 +1,199 @@
+---
+title: "1º TidyTuesday - Week 17 2023"
+author:
+  - name: Lucas Toshio Ito
+    orcid: 0000-0001-9713-8687
+    email: lucas.toshio@unifesp.br
+    affiliations:
+      - name: Universidade Federal de São Paulo (UNIFESP) 
+toc: true
+toc-location: left
+toc-title: Contents
+number-sections: false
+highlight-style: pygments
+format: 
+  html:
+    code-fold: true
+    code-tools: true
+    code-link: true
+    df-print: kable
+    embed-resources: true
+    # include-in-header: 
+    #   - ./back-to-top.html
+    #   - ./progressbar.html
+  pdf:
+    geometry:
+      - top=10mm
+      - left=10mm
+  docx: default
+theme:
+  light: flatly
+  dark: darkly
+css: styles.css
+---
+
+::: {style="font-size: 0.9em"}
+<a href="mailto:lucas.toshio@unifesp.br">
+   <span class="fa-stack fa-sm">
+       <i class="fa fa-circle fa-stack-2x"></i>
+       <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+   </span>
+</a> 
+<a href="https://twitter.com/lcstoshio">
+   <span class="fa-stack fa-sm">
+       <i class="fa fa-circle fa-stack-2x"></i>
+       <i class="fa-brands fa-twitter fa-stack-1x fa-inverse"></i>
+   </span>
+</a>
+<a href="https://github.com/lcstoshio">
+   <span class="fa-stack fa-sm">
+       <i class="fa fa-circle fa-stack-2x"></i>
+       <i class="fa-brands fa-github fa-stack-1x fa-inverse"></i>
+   </span>
+</a>
+<a href="http://linkedin.com/in/lucas-toshio-ito-5b8a96199">
+   <span class="fa-stack fa-sm">
+       <i class="fa fa-circle fa-stack-2x"></i>
+       <i class="fa-brands fa-linkedin fa-stack-1x fa-inverse"></i>
+   </span>
+</a>
+
+::: {.content-hidden}
+{{< fa brands twitter >}}
+:::
+
+```{r}
+#| include: FALSE
+Sys.setlocale("LC_TIME", "C")
+```
+
+**Date:** `r format(Sys.time(), '%B %d, %Y')`
+:::
+
+<font size="3">
+<body>
+
+```{r}
+#| results: FALSE
+#| message: FALSE
+#| warning: FALSE
+
+library(tidyverse)
+library(janitor)
+library(rvest)
+library(reactablefmtr)
+library(reactable)
+library(htmltools)
+library(htmlwidgets)
+library(sysfonts)
+library(showtext)
+library(fontawesome)
+library(countrycode)
+library(webshot2)
+font_add_google("Chivo", "Chivo")
+showtext_auto()
+```
+
+```{r}
+#| results: FALSE
+#| message: FALSE
+#| warning: FALSE
+
+tuesdata <- tidytuesdayR::tt_load(2023, week = 17)
+
+winners <- tuesdata$winners
+london_marathon <- tuesdata$london_marathon
+
+london_marathon$Diff_sf <- london_marathon$Applicants - london_marathon$Accepted
+
+countries <- winners %>% 
+     count(Category, Nationality) %>% 
+     spread(Category, n) %>% 
+     clean_names() %>% 
+     replace(is.na(.), 0) %>% 
+     mutate(total = men + women + wheelchair_men + wheelchair_women) %>% 
+     arrange(desc(total)) 
+
+countries$code <- countrycode(countries$nationality, origin = "country.name", destination = "iso2c")
+countries$code <- paste0("https://raw.githubusercontent.com/catamphetamine/country-flag-icons/master/flags/1x1/", countries$code ,".svg")
+```
+
+```{r}
+# set_colors<-c("#cef5f5","#9aeded","#63e6e6","#0b9e9e")
+
+set_colors<-c("#f5cece","#ed9a9a","#e66363","#9e0b0b")
+
+
+table <- reactable(countries %>% select(code, nationality, total, men, women, wheelchair_men, wheelchair_women),
+          theme = reactableTheme(
+               style=list(fontFamily="Chivo", maxWidth = 800),
+               borderColor="#e3e3e3",
+               backgroundColor = "#FFFFFF"
+               ),
+          defaultColDef = colDef(vAlign="center",
+                                 align="center",
+                                 headerVAlign="center",
+                                 style = color_scales(countries, span = 2:5, colors=set_colors),# , brighten_text = FALSE),
+                                 headerStyle = list(fontFamily="Chivo", background = "#FFFFFF"),
+                                 width=100,
+          ),
+          #showPageSizeOptions = TRUE,
+          pageSizeOptions = c(12, 24),
+          defaultPageSize = 12,
+          columnGroups = list(
+            colGroup(name="", columns=c("code", "nationality", "total"), headerStyle = list(fontFamily="Chivo"), align="left"),
+            colGroup(name="", columns=c("men","women","wheelchair_men","wheelchair_women"), headerStyle = list(fontFamily="Roboto"))),
+          columns = list(
+               code = colDef(name = "",
+                             align = "left",
+                             width=75,
+                             cell=function(code, index){
+                                  image <- img(src = code, style = "width:60px;height:20px;", alt = code)
+                                  tagList(div(style = "display:inline-block;vertical-align:middle;width:50px", image))
+               }),               
+               nationality = colDef(name = "Nationality",
+                                    width=130,),
+               total = colDef(name = "Total Winners",
+                              class = "border-left",
+                              align="left",
+                              width=150,
+                              cell = data_bars(countries,
+                                             fill_color="#9e0b0b",
+                                             text_position = "outside-end", 
+                                             bar_height = 15,
+                                             text_size = 14,
+                                             min_value=0,
+                                             max_value =60,
+                                             background = "transparent")),
+               men = colDef(name = "Men"),
+               women = colDef(name = "Women"),
+               wheelchair_men = colDef(name = "Wheelchair Men"),
+               wheelchair_women = colDef(name = "Wheelchair Women")))
+
+
+table_final <- table%>%
+  htmlwidgets::prependContent(
+    tagList(
+      tags$img(src = "https://static.vecteezy.com/system/resources/previews/009/315/016/original/winner-trophy-in-flat-style-free-png.png", style = "width:26px;height:30px;display:inline-block;vertical-align:middle;margin-bottom:2px"),
+      tags$div("London", style="margin-left:5px;margin-bottom:0;margin-top:0;font-size:40px;font-weight:bold;font-family:Chivo;display:inline-block;vertical-align:middle;color:#005A9C"), 
+      tags$div("Marathon", style="margin-left:5px;margin-bottom:0;margin-top:0;font-size:40px;font-weight:bold;font-family:Chivo;display:inline-block;vertical-align:middle;color:#b22222"), 
+      tags$h2("Nationality of the winners in each category from the London Marathon", style="margin-bottom:0px;margin-top:0px;font-family:Chivo;font-weight:400;color:#5e5d5d;")
+  )
+  )%>%
+  htmlwidgets::appendContent(
+    tags$div(
+      tags$div("Data: LondonMarathon package by Nicola Rennie (@nrennie35) | Graphic: ", style="display:inline-block;vertical-align:middle;"),
+      tags$div(fa("twitter"), style="font-family:'Font Awesome 6 Brands';display:inline-block;vertical-align:middle;"),
+      tags$div(fa("github"), style="font-family:'Font Awesome 6 Brands';display:inline-block;vertical-align:middle;"),
+      tags$div("lcstoshio", style="display:inline-block;vertical-align:middle;"),
+             style="font-family:Chivo;color:#8C8C8C;font-size:10pt,padding-top:8px;display:inline-block;vertical-align:middle;border-top-style:solid;border-color:#e3e3e3;width:800px"))
+
+# table_final
+
+html <- "LondonMarathon.html"
+saveWidget(table_final, html)
+webshot(html, "LondonMarathon.png", vwidth = 910)
+```
+
+</body>
+</font>
