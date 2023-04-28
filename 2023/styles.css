@@ -1,0 +1,54 @@
+a{text-decoration: none;}
+
+.fa-stack        .fa.fa-circle { color:darkcyan ; }
+
+.title {
+  font-size: 48px;
+  font-weight: bold;
+  font-style: italic;
+  color: darkcyan;
+  font-family: Times;
+  font-variant: small-caps;
+}
+
+h1,h2,h3,h4{
+  font-size: 28pt;
+  color: teal;
+  font-family: Helvetica;
+  font-variant: small-caps;
+}
+
+h5,h6{
+  font-size: 14pt;
+  color: teal;
+  font-family: Helvetica;
+  font-variant: small-caps;
+}
+
+/*/
+body{
+  font-family: Helvetica;
+  font-size: 22pt;
+}
+/*/
+
+/*-- scss:defaults --*/
+$callout-background: #E41A1C;
+
+/*-- scss:rules --*/
+
+.callout-fill; {
+    border-left-color: #E41A1C;
+    background-color: #E41A1C;
+    border-color:  #E41A1C;
+ }
+ 
+callout-tweet.callout {
+  border-left-color: #bfe4eb;
+}
+
+callout-tweet.callout-style-default>.callout-header {
+  background-color: #bfe4eb;
+}
+
+class="alert alert-dismissible alert-primary"
