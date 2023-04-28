@@ -99,10 +99,8 @@ showtext_auto()
 #| message: FALSE
 #| warning: FALSE
 
-tuesdata <- tidytuesdayR::tt_load(2023, week = 17)
-
-winners <- tuesdata$winners
-london_marathon <- tuesdata$london_marathon
+winners <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2023/2023-04-25/winners.csv')
+london_marathon <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2023/2023-04-25/london_marathon.csv')
 
 london_marathon$Diff_sf <- london_marathon$Applicants - london_marathon$Accepted
 
@@ -138,8 +136,8 @@ table <- reactable(countries %>% select(code, nationality, total, men, women, wh
                                  width=100,
           ),
           #showPageSizeOptions = TRUE,
-          pageSizeOptions = c(12, 24),
-          defaultPageSize = 12,
+          # pageSizeOptions = c(12, 24),
+          defaultPageSize = 24,
           columnGroups = list(
             colGroup(name="", columns=c("code", "nationality", "total"), headerStyle = list(fontFamily="Chivo"), align="left"),
             colGroup(name="", columns=c("men","women","wheelchair_men","wheelchair_women"), headerStyle = list(fontFamily="Roboto"))),
