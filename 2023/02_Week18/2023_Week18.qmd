@@ -1,0 +1,194 @@
+---
+title: "2º TidyTuesday - Week 18 2023"
+author:
+  - name: Lucas Toshio Ito
+    orcid: 0000-0001-9713-8687
+    email: lucas.toshio@unifesp.br
+    affiliations:
+      - name: Universidade Federal de São Paulo (UNIFESP) 
+toc: true
+toc-location: left
+toc-title: Contents
+number-sections: false
+highlight-style: pygments
+format: 
+  html:
+    code-fold: true
+    code-tools: true
+    code-link: true
+    df-print: kable
+    embed-resources: true
+    # include-in-header: 
+    #   - ./back-to-top.html
+    #   - ./progressbar.html
+  pdf:
+    geometry:
+      - top=10mm
+      - left=10mm
+  docx: default
+theme:
+  light: flatly
+  dark: darkly
+css: styles.css
+---
+
+::: {style="font-size: 0.9em"}
+<a href="mailto:lucas.toshio@unifesp.br">
+   <span class="fa-stack fa-sm">
+       <i class="fa fa-circle fa-stack-2x"></i>
+       <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+   </span>
+</a> 
+<a href="https://twitter.com/lcstoshio">
+   <span class="fa-stack fa-sm">
+       <i class="fa fa-circle fa-stack-2x"></i>
+       <i class="fa-brands fa-twitter fa-stack-1x fa-inverse"></i>
+   </span>
+</a>
+<a href="https://github.com/lcstoshio">
+   <span class="fa-stack fa-sm">
+       <i class="fa fa-circle fa-stack-2x"></i>
+       <i class="fa-brands fa-github fa-stack-1x fa-inverse"></i>
+   </span>
+</a>
+<a href="http://linkedin.com/in/lucas-toshio-ito-5b8a96199">
+   <span class="fa-stack fa-sm">
+       <i class="fa fa-circle fa-stack-2x"></i>
+       <i class="fa-brands fa-linkedin fa-stack-1x fa-inverse"></i>
+   </span>
+</a>
+
+::: {.content-hidden}
+{{< fa brands twitter >}}
+:::
+
+```{r}
+#| include: FALSE
+Sys.setlocale("LC_TIME", "C")
+```
+
+**Date:** `r format(Sys.time(), '%B %d, %Y')`
+:::
+
+```{r}
+#| label = "set options",
+#| include = FALSE
+options(width = 700, height= 700)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, out.width = "100%", fig.showtext = TRUE, retina = 1)
+```
+
+<font size="3">
+<body>
+
+```{r}
+#| results: FALSE
+#| message: FALSE
+#| warning: FALSE
+
+library(tidyverse)
+library(janitor)
+library(RColorBrewer)
+library(htmltools)
+library(htmlwidgets)
+library(sysfonts)
+library(showtext)
+library(fontawesome)
+library(ggtext)
+# library(webshot2)
+library(emojifont)
+# font_add('fa-regular', './_extensions/quarto-ext/fontawesome/otfs/Font Awesome 6 Brands-Regular-400.otf')
+showtext_auto()
+# showtext_opts(dpi = 300)
+```
+
+```{r}
+#| results: FALSE
+#| message: FALSE
+#| warning: FALSE
+
+plots <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2023/2023-05-02/plots.csv')
+species <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2023/2023-05-02/species.csv')
+surveys <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2023/2023-05-02/surveys.csv')
+
+surveys$species <- surveys$species %>% 
+     replace(is.na(.), "NA")
+
+surveys$genus [surveys$species=="BA"] <- "Baiomys"
+surveys$genus [surveys$species=="PB" | surveys$species=="PH" | surveys$species=="PI" | surveys$species=="PP"] <- "Chaetodipus"
+surveys$genus [surveys$species=="DM" | surveys$species=="DO" | surveys$species=="DS"] <- "Dipodomys"
+surveys$genus [surveys$species=="NA"] <- "Neotoma"
+surveys$genus [surveys$species=="OL" | surveys$species=="OT"] <- "Onychomys"
+surveys$genus [surveys$species=="PF"] <- "Perognathus"
+surveys$genus [surveys$species=="PE" | surveys$species=="PL" | surveys$species=="PM"] <- "Peromyscus"
+surveys$genus [surveys$species=="RF" | surveys$species=="RM" | surveys$species=="RO"] <- "Reithrodontomys"
+surveys$genus [surveys$species=="SF" | surveys$species=="SH" | surveys$species=="SO"] <- "Sigmodon"
+
+balloon <- as.data.frame(table(surveys$year, surveys$genus))
+colnames(balloon) <- c("year", "genus", "freq")
+balloon <- balloon %>% 
+     arrange (desc(year)) %>% 
+     mutate(row = rep(1:45, each=9)) %>% 
+     arrange (genus) %>% 
+     mutate(col = rep(1:9, each=45))
+
+balloon$freq[balloon$freq<=0] <- NA
+balloon <- cbind(emoji('mouse2'), balloon)
+colnames(balloon)[1] <- "label"
+
+# Balloon plot format table:
+# two columns with the variables, one column with freq, and two columns with row and col number
+
+vars_x_axis <- c(balloon %>% arrange(col) %>% select(genus) %>% distinct())$genus
+names_y_axis <- c(balloon %>% group_by(row) %>% distinct(year) %>% ungroup() %>% select(year))$year
+
+colors <- brewer.pal(n = 9, name = "Set1")
+colors <- c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#d4d404", "#ad4b13", "#d6388b", "#4B5A5D")
+graph <- 
+(ggplot(balloon, aes(x=factor(col), y=factor(row), color=genus, size=freq, alpha=freq, label=label)) +
+     geom_point() +
+     geom_text(aes(label=freq, x=col + 0.35), alpha=1.0, size=4) +
+     scale_alpha_continuous(range=c(0.2, 0.8), "year") +
+     scale_size_area(max_size = 8) +
+     scale_x_discrete(breaks=1:length(vars_x_axis), labels=vars_x_axis, position='top') + 
+     scale_y_discrete(breaks=1:length(names_y_axis), labels=names_y_axis)+
+     # scale_fill_brewer(palette="Set1")+
+     # scale_color_brewer(palette="Set1")+
+     scale_fill_manual(values = colors) +
+     scale_color_manual(values = colors)+
+     theme_bw() +
+     theme(axis.line = element_blank(),
+           panel.border = element_blank(),
+           panel.grid.major.x = element_blank(),
+           panel.grid.minor.x = element_blank(),
+           panel.grid.major.y = element_blank(),
+           panel.grid.minor.y = element_blank(),
+           axis.text = element_text(family = "Merriweather", color="gray24", size=10, face="bold"),
+           axis.title = element_text(family = "Lato", color="gray24", size=14, face="bold"),
+           axis.ticks = element_blank(),
+           legend.position = "none",
+           axis.title.x = element_blank(),
+            plot.margin = margin(
+          10, 10, 10, 20
+          ),
+        plot.title = element_text(
+          size = 36,
+          colour = "#2F4F4F",
+          face="bold",
+          hjust = 0.5, vjust = 2
+          ),
+        plot.caption = element_text(
+          size = 10,
+          colour = "#2F4F4F",
+          hjust = 0.97, vjust = 0
+          ),)+
+   labs(title = "Genus of Rodents in the Portal Project",
+         # x = "Genus of Rodents \n", 
+         y = "Year \n",
+         caption = "Data: Portal Project | Graphic: @lcstoshio"))
+
+graph
+ggsave("Rodents.png", height=11, width=11)
+```
+
+</body>
+</font>
