@@ -1,0 +1,218 @@
+---
+title: "4º TidyTuesday - Week 20 2023"
+author:
+  - name: Lucas Toshio Ito
+    orcid: 0000-0001-9713-8687
+    email: lucas.toshio@unifesp.br
+    affiliations:
+      - name: Universidade Federal de São Paulo (UNIFESP) 
+toc: true
+toc-location: left
+toc-title: Contents
+number-sections: false
+highlight-style: pygments
+format: 
+  html:
+    code-fold: true
+    code-tools: true
+    code-link: true
+    df-print: kable
+    embed-resources: true
+    # include-in-header: 
+    #   - ./back-to-top.html
+    #   - ./progressbar.html
+  pdf:
+    geometry:
+      - top=10mm
+      - left=10mm
+  docx: default
+theme:
+  light: flatly
+  dark: darkly
+css: styles.css
+---
+
+::: {style="font-size: 0.9em"}
+<a href="mailto:lucas.toshio@unifesp.br">
+   <span class="fa-stack fa-sm">
+       <i class="fa fa-circle fa-stack-2x"></i>
+       <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+   </span>
+</a> 
+<a href="https://twitter.com/lcstoshio">
+   <span class="fa-stack fa-sm">
+       <i class="fa fa-circle fa-stack-2x"></i>
+       <i class="fa-brands fa-twitter fa-stack-1x fa-inverse"></i>
+   </span>
+</a>
+<a href="https://github.com/lcstoshio">
+   <span class="fa-stack fa-sm">
+       <i class="fa fa-circle fa-stack-2x"></i>
+       <i class="fa-brands fa-github fa-stack-1x fa-inverse"></i>
+   </span>
+</a>
+<a href="http://linkedin.com/in/lucas-toshio-ito-5b8a96199">
+   <span class="fa-stack fa-sm">
+       <i class="fa fa-circle fa-stack-2x"></i>
+       <i class="fa-brands fa-linkedin fa-stack-1x fa-inverse"></i>
+   </span>
+</a>
+
+::: {.content-hidden}
+{{< fa brands twitter >}}
+:::
+
+```{r}
+#| include: FALSE
+Sys.setlocale("LC_TIME", "C")
+```
+
+**Date:** `r format(Sys.time(), '%B %d, %Y')`
+:::
+
+```{r}
+#| label = "set options",
+#| include = FALSE
+options(width = 700, height= 700)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, out.width = "100%", fig.showtext = TRUE, retina = 1)
+```
+
+<font size="3">
+<body>
+
+```{r}
+#| results: FALSE
+#| message: FALSE
+#| warning: FALSE
+
+library(tidyverse)
+library(ggplot2)
+library(plyr)
+library(janitor)
+library(RColorBrewer)
+library(htmltools)
+library(htmlwidgets)
+library(sysfonts)
+library(showtext)
+library(fontawesome)
+library(ggtext)
+# library(webshot2)
+library(emojifont)
+# font_add('fa-regular', './_extensions/quarto-ext/fontawesome/otfs/Font Awesome 6 Brands-Regular-400.otf')
+showtext_auto()
+# showtext_opts(dpi = 300)
+```
+
+```{r}
+#| results: FALSE
+#| message: FALSE
+#| warning: FALSE
+
+tornados <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2023/2023-05-16/tornados.csv')
+```
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(plyr)
+library(viridis)
+library(lubridate)
+library(ggExtra)
+library(tidyr)
+library(ggtext)
+
+data <- tornados %>% 
+     group_by(date) %>% 
+     dplyr::summarise(N=n())
+
+start_date <- as.Date("1950-01-01")
+end_date <- as.Date("2022-12-31")
+all_dates <- as.data.frame(seq(start_date, end_date, by = "day"))
+colnames(all_dates) <- c("date")
+
+final <- join_all(list(data, all_dates), by="date", type="full")
+
+final <- final %>% 
+     arrange(date) %>% 
+     mutate(year = year(date),
+            month = month(date, label=TRUE, locale=Sys.setlocale("LC_ALL","English")),
+            day = day(date)) 
+
+final[is.na(final)] = 0
+# final$N[final$N>=50] <- 50
+final$N <- log(final$N + 1)
+
+
+library(R.utils)
+final$month<-factor(capitalize(final$month), levels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"), ordered = TRUE)
+
+rect<-data.frame(xmin = c(rep(0, times=2), 19, rep(0, times=9)), xmax = c(rep(0, times=2),32,31,32,22,rep(0, times=6)), 
+                 ymin = c(rep(1949, times=12)), ymax = c(rep(1949, times=2), rep(2023, times=4), rep(1949, times=6)), 
+                 alpha = c(rep(0.1, times=12)),
+                 month = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))
+
+rect<-data.frame(xmin = c(rep(-Inf, times=2), 19, rep(-Inf, times=9)), xmax = c(rep(-Inf, times=2),Inf,Inf,Inf,Inf,rep(-Inf, times=6)), 
+                 ymin = c(rep(-Inf, times=12)), ymax = c(rep(-Inf, times=2), rep(Inf, times=4), rep(-Inf, times=6)), 
+                 alpha = c(rep(0.1, times=12)),
+                 month = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))
+
+rect$month<-factor(rect$month, levels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"), ordered = TRUE)
+
+subs <- "Tornadoes can happen at any time of the year, but for the US <span style='color: chocolate2;}'>Spring<br> (March 20th - June 21th)</span> is where they are most frequent."
+
+library(ggplot2)
+library(ggExtra)
+ggplot(final,aes(day,year,fill=N))+
+     geom_tile(color= "white",size=0.1) + 
+     scale_fill_gradient(low = "white", high = "#c95d06")+
+     # geom_rect(aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+     #   alpha = 0, colour = "#3B3561",
+     #   data = rect,
+     #   inherit.aes = FALSE,
+     #   linewidth=0.5) +
+     scale_y_continuous(breaks =c(1950,1960,1970,1980,1990,2000,2010,2020))+
+     scale_x_continuous(breaks =c(1,11,21,31))+
+     theme_minimal(base_size = 8)+
+     labs(title= "Frequency of Tornadoes in the US", 
+          x="Day", 
+          y="Year", 
+          fill=bquote(atop(log[10] ~ Nº ~ Tornadoes)), line=2, cex=1.5, font=2, adj=0,
+          subtitle=subs,
+          caption = "Data: NOAA's National Weather Service Storm Prediction Center | Graphic: @lcstoshio")+
+     facet_wrap(~month, nrow=1)+
+     theme(legend.position = "bottom",
+          plot.title = element_text(
+               size = 26,
+               colour = "#2F4F4F",
+               face="bold",
+               hjust = 0, vjust = 1
+               ),
+          plot.subtitle = element_markdown(
+               size = 14,
+               colour = "#2F4F4F",
+               hjust = 0, vjust = 0,
+               lineheight = 1.3,
+               ),
+          plot.caption = element_text(
+               size = 7,
+               colour = "#2F4F4F",
+               hjust = 0.97, vjust = 0
+               ),
+           axis.text.y=element_text(size=9),
+           axis.title.y=element_text(size=11),
+           axis.text.x=element_blank(),
+           axis.title.x=element_blank(),
+           axis.ticks=element_blank(),
+           legend.title=element_text(size=9),
+           legend.text=element_text(size=8),
+           strip.background = element_rect(colour="white"),
+           strip.text = element_text(size=12, color="#253d3d", vjust = -0, face="bold"))+
+     removeGrid()+
+     guides(fill = guide_colourbar(barwidth = 12,
+                                barheight = 0.5))
+     
+ggsave(filename="C:/Lucas/Tidytuesday/Tornadoes.jpeg")
+```
+
+</body>
+</font>
